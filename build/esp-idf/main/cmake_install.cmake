@@ -1,4 +1,4 @@
-# Install script for directory: /home/nick/esp/spi/main
+# Install script for directory: /home/nick/WackerTracker/main
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
