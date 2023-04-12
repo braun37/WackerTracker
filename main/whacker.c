@@ -23,12 +23,17 @@ uint8_t ble_addr_type;
 void ble_app_scan(void);
 void ble_app_advertise(void);
 
-int read_flag = 0;
+//int read_flag = 0;
 //int x_arr[] = {1, 2, 3};
 
-short int* p = test3;
+//short int* p = test3;
 //int index = 0
 //write data
+
+sensor_output* sensor1_pointer = testObj.test1;
+sensor_output* sensor2_pointer = testObj.test1;
+sensor_output* sensor3_pointer = testObj.test1;
+
 static int device_write(uint16_t conn_handle, uint16_t attr_handle, struct ble_gatt_access_ctxt *ctxt, void *arg)
 {
     printf("Data from the client: %.*s\n", ctxt->om->om_len, ctxt->om->om_data);
@@ -36,7 +41,7 @@ static int device_write(uint16_t conn_handle, uint16_t attr_handle, struct ble_g
 }
 
 //read data
-static int device_read(uint16_t con_handle, uint16_t attr_handle, struct ble_gatt_access_ctxt *ctxt, void *arg)
+static int device_read_sensor1(uint16_t con_handle, uint16_t attr_handle, struct ble_gatt_access_ctxt *ctxt, void *arg)
 {
     //os_mbuf_append(ctxt->om, "X", strlen("X"));
     //os_mbuf_append(ctxt->om, &x_arr, sizeof(x_arr));
@@ -44,19 +49,66 @@ static int device_read(uint16_t con_handle, uint16_t attr_handle, struct ble_gat
     //maybe set if statement on if read flag is 0/1 so that
     //when its 1 it knows its mid read and doesnt reset arr
     //short int* p = test3;
-    os_mbuf_append(ctxt->om, p, (sizeof(*(p)) * 6));
-    p += 6;
+    //os_mbuf_append(ctxt->om, p, (sizeof(*(p)) * 6));
+    os_mbuf_append(ctxt->om, sensor1_pointer, (sizeof(*(sensor1_pointer))));
+    //p += 6;
+    sensor1_pointer += 1;
 
     return 0;
 }
 
-/*static int device_read(uint16_t con_handle, uint16_t attr_handle, struct ble_gatt_access_ctxt *ctxt, void *arg)
+static int device_read_sensor1_numElements(uint16_t con_handle, uint16_t attr_handle, struct ble_gatt_access_ctxt *ctxt, void *arg)
 {
-    os_mbuf_append(ctxt->om, &read_flag, sizeof(read_flag));
-    read_flag = 0;
+    os_mbuf_append(ctxt->om, &(testObj.numElements), sizeof(testObj.numElements));
 
     return 0;
-}*/
+}
+
+static int device_read_sensor2(uint16_t con_handle, uint16_t attr_handle, struct ble_gatt_access_ctxt *ctxt, void *arg)
+{
+    //os_mbuf_append(ctxt->om, "X", strlen("X"));
+    //os_mbuf_append(ctxt->om, &x_arr, sizeof(x_arr));
+
+    //maybe set if statement on if read flag is 0/1 so that
+    //when its 1 it knows its mid read and doesnt reset arr
+    //short int* p = test3;
+    //os_mbuf_append(ctxt->om, p, (sizeof(*(p)) * 6));
+    os_mbuf_append(ctxt->om, sensor1_pointer, (sizeof(*(sensor1_pointer))));
+    //p += 6;
+    sensor1_pointer += 1;
+
+    return 0;
+}
+
+static int device_read_sensor2_numElements(uint16_t con_handle, uint16_t attr_handle, struct ble_gatt_access_ctxt *ctxt, void *arg)
+{
+    os_mbuf_append(ctxt->om, &(testObj.numElements), sizeof(testObj.numElements));
+
+    return 0;
+}
+
+static int device_read_sensor3(uint16_t con_handle, uint16_t attr_handle, struct ble_gatt_access_ctxt *ctxt, void *arg)
+{
+    //os_mbuf_append(ctxt->om, "X", strlen("X"));
+    //os_mbuf_append(ctxt->om, &x_arr, sizeof(x_arr));
+
+    //maybe set if statement on if read flag is 0/1 so that
+    //when its 1 it knows its mid read and doesnt reset arr
+    //short int* p = test3;
+    //os_mbuf_append(ctxt->om, p, (sizeof(*(p)) * 6));
+    os_mbuf_append(ctxt->om, sensor1_pointer, (sizeof(*(sensor1_pointer))));
+    //p += 6;
+    sensor1_pointer += 1;
+
+    return 0;
+}
+
+static int device_read_sensor3_numElements(uint16_t con_handle, uint16_t attr_handle, struct ble_gatt_access_ctxt *ctxt, void *arg)
+{
+    os_mbuf_append(ctxt->om, &(testObj.numElements), sizeof(testObj.numElements));
+
+    return 0;
+}
 
 
 static const struct ble_gatt_svc_def gatt_svcs[] = {
@@ -65,22 +117,22 @@ static const struct ble_gatt_svc_def gatt_svcs[] = {
      .characteristics = (struct ble_gatt_chr_def[]){
          {.uuid = BLE_UUID16_DECLARE(0xFEF4),           //Define UUID for reading
           .flags = BLE_GATT_CHR_F_READ,
-          .access_cb = device_read},
+          .access_cb = device_read_sensor1},
          {.uuid = BLE_UUID16_DECLARE(0xFEF5),
           .flags = BLE_GATT_CHR_F_READ,
-          .access_cb = device_read},
-         /*{.uuid = BLE_UUID16_DECLARE(0xFEF6),
+          .access_cb = device_read_sensor1_numElements},
+         {.uuid = BLE_UUID16_DECLARE(0xFEF6),
           .flags = BLE_GATT_CHR_F_READ,
-          .access_cb = device_read},
+          .access_cb = device_read_sensor2},
          {.uuid = BLE_UUID16_DECLARE(0xFEF7),
           .flags = BLE_GATT_CHR_F_READ,
-          .access_cb = device_read},
+          .access_cb = device_read_sensor2_numElements},
          {.uuid = BLE_UUID16_DECLARE(0xFEF8),
           .flags = BLE_GATT_CHR_F_READ,
-          .access_cb = device_read},
+          .access_cb = device_read_sensor3},
          {.uuid = BLE_UUID16_DECLARE(0xFEF9),
           .flags = BLE_GATT_CHR_F_READ,
-          .access_cb = device_read},*/
+          .access_cb = device_read_sensor3_numElements},
          {.uuid = BLE_UUID16_DECLARE(0xDEAD),           //Define UUID for writing
           .flags = BLE_GATT_CHR_F_WRITE,
           .access_cb = device_write},
