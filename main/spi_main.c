@@ -50,7 +50,7 @@ typedef struct _s_output{
 } s_output;
 
 typedef struct _s_block{
-  uint8_t num;
+  uint8_t numel;
   s_output *elements;
 } s_block;
 
@@ -72,41 +72,82 @@ uint8_t ble_addr_type;
 void ble_app_scan(void);
 void ble_app_advertise(void);
 
-int read_flag = 0;
-//int x_arr[] = {1, 2, 3};
-
-uint16_t *p = NULL;
-//int index = 0
-//write data
 static int device_write(uint16_t conn_handle, uint16_t attr_handle, struct ble_gatt_access_ctxt *ctxt, void *arg)
 {
     printf("Data from the client: %.*s\n", ctxt->om->om_len, ctxt->om->om_data);
     return 0;
 }
 
-//read data
-static int device_read(uint16_t con_handle, uint16_t attr_handle, struct ble_gatt_access_ctxt *ctxt, void *arg)
+static int device_read_sensor1(uint16_t con_handle, uint16_t attr_handle, struct ble_gatt_access_ctxt *ctxt, void *arg)
 {
     //os_mbuf_append(ctxt->om, "X", strlen("X"));
     //os_mbuf_append(ctxt->om, &x_arr, sizeof(x_arr));
+   
+    // Add all the elements of the data structure into the buffer 
+    //for(int i=0; i<s_one_block.numel; i++) {
+    //  os_mbuf_append(ctxt->om, &(s_one_block.elements[i]), sizeof(s_one_block.elements[i]));
+    //}
+    int rc = os_mbuf_append(ctxt->om, s_one_block.elements, sizeof(*s_one_block.elements)*s_one_block.numel);
+    assert(rc == 0);
 
-    //maybe set if statement on if read flag is 0/1 so that
-    //when its 1 it knows its mid read and doesnt reset arr
-    //short int* p = test3;
-    os_mbuf_append(ctxt->om, p, (sizeof(*(p)) * 6));
-    p += 6;
+    // Clear the number of elements
+    //s_one_block.numel--;
 
     return 0;
 }
 
-/*static int device_read(uint16_t con_handle, uint16_t attr_handle, struct ble_gatt_access_ctxt *ctxt, void *arg)
+static int device_read_sensor1_numElements(uint16_t con_handle, uint16_t attr_handle, struct ble_gatt_access_ctxt *ctxt, void *arg)
 {
-    os_mbuf_append(ctxt->om, &read_flag, sizeof(read_flag));
-    read_flag = 0;
+    os_mbuf_append(ctxt->om, &(s_one_block.numel), sizeof(s_one_block.numel));
 
     return 0;
-}*/
+}
 
+static int device_read_sensor2(uint16_t con_handle, uint16_t attr_handle, struct ble_gatt_access_ctxt *ctxt, void *arg)
+{
+    //os_mbuf_append(ctxt->om, "X", strlen("X"));
+    //os_mbuf_append(ctxt->om, &x_arr, sizeof(x_arr));
+   
+    // Add all the elements of the data structure into the buffer 
+    for(int i=0; i<s_two_block.numel; i++) {
+      os_mbuf_append(ctxt->om, &(s_two_block.elements[i]), sizeof(s_two_block.elements[i]));
+    }
+
+    // Clear the number of elements
+    s_two_block.numel = 0;
+
+    return 0;
+}
+
+static int device_read_sensor2_numElements(uint16_t con_handle, uint16_t attr_handle, struct ble_gatt_access_ctxt *ctxt, void *arg)
+{
+    os_mbuf_append(ctxt->om, &(s_two_block.numel), sizeof(s_two_block.numel));
+
+    return 0;
+}
+
+static int device_read_sensor3(uint16_t con_handle, uint16_t attr_handle, struct ble_gatt_access_ctxt *ctxt, void *arg)
+{
+    //os_mbuf_append(ctxt->om, "X", strlen("X"));
+    //os_mbuf_append(ctxt->om, &x_arr, sizeof(x_arr));
+   
+    // Add all the elements of the data structure into the buffer 
+    for(int i=0; i<s_thr_block.numel; i++) {
+      os_mbuf_append(ctxt->om, &(s_thr_block.elements[i]), sizeof(s_thr_block.elements[i]));
+    }
+
+    // Clear the number of elements
+    s_thr_block.numel = 0;
+
+    return 0;
+}
+
+static int device_read_sensor3_numElements(uint16_t con_handle, uint16_t attr_handle, struct ble_gatt_access_ctxt *ctxt, void *arg)
+{
+    os_mbuf_append(ctxt->om, &(s_thr_block.numel), sizeof(s_thr_block.numel));
+
+    return 0;
+}
 
 static const struct ble_gatt_svc_def gatt_svcs[] = {
     {.type = BLE_GATT_SVC_TYPE_PRIMARY,
@@ -114,22 +155,22 @@ static const struct ble_gatt_svc_def gatt_svcs[] = {
      .characteristics = (struct ble_gatt_chr_def[]){
          {.uuid = BLE_UUID16_DECLARE(0xFEF4),           //Define UUID for reading
           .flags = BLE_GATT_CHR_F_READ,
-          .access_cb = device_read},
+          .access_cb = device_read_sensor1},
          {.uuid = BLE_UUID16_DECLARE(0xFEF5),
           .flags = BLE_GATT_CHR_F_READ,
-          .access_cb = device_read},
-         /*{.uuid = BLE_UUID16_DECLARE(0xFEF6),
+          .access_cb = device_read_sensor1_numElements},
+         {.uuid = BLE_UUID16_DECLARE(0xFEF6),
           .flags = BLE_GATT_CHR_F_READ,
-          .access_cb = device_read},
+          .access_cb = device_read_sensor2},
          {.uuid = BLE_UUID16_DECLARE(0xFEF7),
           .flags = BLE_GATT_CHR_F_READ,
-          .access_cb = device_read},
+          .access_cb = device_read_sensor2_numElements},
          {.uuid = BLE_UUID16_DECLARE(0xFEF8),
           .flags = BLE_GATT_CHR_F_READ,
-          .access_cb = device_read},
+          .access_cb = device_read_sensor3},
          {.uuid = BLE_UUID16_DECLARE(0xFEF9),
           .flags = BLE_GATT_CHR_F_READ,
-          .access_cb = device_read},*/
+          .access_cb = device_read_sensor3_numElements},
          {.uuid = BLE_UUID16_DECLARE(0xDEAD),           //Define UUID for writing
           .flags = BLE_GATT_CHR_F_WRITE,
           .access_cb = device_write},
@@ -373,10 +414,10 @@ void _setup_sensor(spi_device_handle_t spi) {
 }
 
 void _fifo_read(spi_device_handle_t spi, s_block *blk) {
-  assert(!blk->num);
-  blk->num = (_spi_read_trans(spi, LSM6DSM_FIFO_STATUS1, HALFWORD) & 0x7FFF)/6;
+  //assert(!blk->numel);
+  blk->numel = (_spi_read_trans(spi, LSM6DSM_FIFO_STATUS1, HALFWORD) & 0x7FFF)/6;
 
-  for(int i=0; i<blk->num; i++) {
+  for(int i=0; i<blk->numel; i++) {
     (blk->elements)[i].ang_x = _spi_read_trans(spi, LSM6DSM_FIFO_DATA_OUT_L, HALFWORD);
     (blk->elements)[i].ang_y = _spi_read_trans(spi, LSM6DSM_FIFO_DATA_OUT_L, HALFWORD);
     (blk->elements)[i].ang_z = _spi_read_trans(spi, LSM6DSM_FIFO_DATA_OUT_L, HALFWORD);
@@ -401,15 +442,19 @@ static void gpio_task_example(void* arg) {
   uint32_t io_pin;
   for(;;) {
     if(xQueueReceive(gpio_evt_queue, &io_pin, portMAX_DELAY)) {
-        printf("GPIO[%"PRIu32"] intr, val: %d\n", io_pin, gpio_get_level(io_pin));
-        
         if(gpio_get_level(io_pin) == 0) continue;
 
         switch(io_pin) {
-          case 32: _fifo_read(s_one, &s_one_block);
-                   break;
-          case 33: _fifo_read(s_two, &s_two_block);
-                   break;
+          case 32: 
+            printf("SENSOR1 INTERRUPT\n");
+            _fifo_read(s_one, &s_one_block);
+            printf("numel=%u\n", s_one_block.numel);
+            break;
+          case 33: 
+            printf("SENSOR2 INTERRUPT\n");
+            _fifo_read(s_two, &s_two_block);
+            printf("numel=%u\n", s_two_block.numel);
+            break;
         }
     }
   }
@@ -436,7 +481,7 @@ void app_main(void)
 
   {
     spi_device_interface_config_t devcfg = {
-      .clock_speed_hz=5*1000*1000,        // Clock out at 5 MHz
+      .clock_speed_hz=1*1000*1000,        // Clock out at 5 MHz
       .mode=0,                            // SPI mode 0
       .spics_io_num=PIN_CS0,              // CS pin
       .queue_size=7,                      // We want to be able to queue 7 transactions at a time
@@ -449,7 +494,7 @@ void app_main(void)
 
   {
     spi_device_interface_config_t devcfg = {
-      .clock_speed_hz=5*1000*1000,        // Clock out at 5 MHz
+      .clock_speed_hz=1*1000*1000,        // Clock out at 5 MHz
       .mode=0,                            // SPI mode 0
       .spics_io_num=PIN_CS1,              // CS pin
       .queue_size=7,                      // We want to be able to queue 7 transactions at a time
@@ -485,48 +530,48 @@ void app_main(void)
   gpio_isr_handler_add(PIN_S_ONE_INT1, gpio_isr_handler, (void*) PIN_S_ONE_INT1);
   gpio_isr_handler_add(PIN_S_TWO_INT1, gpio_isr_handler, (void*) PIN_S_TWO_INT1);
 
-  for(;;) {
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
+  //for(;;) {
+  //  vTaskDelay(1000 / portTICK_PERIOD_MS);
 
-    if(s_one_block.num) {
-      for(int i=0; i<s_one_block.num; i++) {
-        printf("[1] [%6hd, %6hd, %6hd] (%6hd, %6hd, %6hd)\n", 
-            (short) s_one_block.elements[i].ang_x,
-            (short) s_one_block.elements[i].ang_y,
-            (short) s_one_block.elements[i].ang_z,
-            (short) s_one_block.elements[i].lin_x,
-            (short) s_one_block.elements[i].lin_y,
-            (short) s_one_block.elements[i].lin_z);
-      }
-      s_one_block.num = 0;
-    }
+  //  if(s_one_block.num) {
+  //    for(int i=0; i<s_one_block.num; i++) {
+  //      printf("[1] [%6hd, %6hd, %6hd] (%6hd, %6hd, %6hd)\n", 
+  //          (short) s_one_block.elements[i].ang_x,
+  //          (short) s_one_block.elements[i].ang_y,
+  //          (short) s_one_block.elements[i].ang_z,
+  //          (short) s_one_block.elements[i].lin_x,
+  //          (short) s_one_block.elements[i].lin_y,
+  //          (short) s_one_block.elements[i].lin_z);
+  //    }
+  //    s_one_block.num = 0;
+  //  }
 
-    if(s_two_block.num) {
-      for(int i=0; i<s_two_block.num; i++) {
-        printf("[2] [%6hd, %6hd, %6hd] (%6hd, %6hd, %6hd)\n", 
-            (short) s_two_block.elements[i].ang_x,
-            (short) s_two_block.elements[i].ang_y,
-            (short) s_two_block.elements[i].ang_z,
-            (short) s_two_block.elements[i].lin_x,
-            (short) s_two_block.elements[i].lin_y,
-            (short) s_two_block.elements[i].lin_z);
-      }
-      s_two_block.num = 0;
-    }
+  //  if(s_two_block.num) {
+  //    for(int i=0; i<s_two_block.num; i++) {
+  //      printf("[2] [%6hd, %6hd, %6hd] (%6hd, %6hd, %6hd)\n", 
+  //          (short) s_two_block.elements[i].ang_x,
+  //          (short) s_two_block.elements[i].ang_y,
+  //          (short) s_two_block.elements[i].ang_z,
+  //          (short) s_two_block.elements[i].lin_x,
+  //          (short) s_two_block.elements[i].lin_y,
+  //          (short) s_two_block.elements[i].lin_z);
+  //    }
+  //    s_two_block.num = 0;
+  //  }
 
-    if(s_thr_block.num) {
-      for(int i=0; i<s_one_block.num; i++) {
-        printf("[3] [%6hd, %6hd, %6hd] (%6hd, %6hd, %6hd)\n", 
-            (short) s_thr_block.elements[i].ang_x,
-            (short) s_thr_block.elements[i].ang_y,
-            (short) s_thr_block.elements[i].ang_z,
-            (short) s_thr_block.elements[i].lin_x,
-            (short) s_thr_block.elements[i].lin_y,
-            (short) s_thr_block.elements[i].lin_z);
-      }
-      s_thr_block.num = 0;
-    }
-  }
+  //  if(s_thr_block.num) {
+  //    for(int i=0; i<s_one_block.num; i++) {
+  //      printf("[3] [%6hd, %6hd, %6hd] (%6hd, %6hd, %6hd)\n", 
+  //          (short) s_thr_block.elements[i].ang_x,
+  //          (short) s_thr_block.elements[i].ang_y,
+  //          (short) s_thr_block.elements[i].ang_z,
+  //          (short) s_thr_block.elements[i].lin_x,
+  //          (short) s_thr_block.elements[i].lin_y,
+  //          (short) s_thr_block.elements[i].lin_z);
+  //    }
+  //    s_thr_block.num = 0;
+  //  }
+  //}
 
   nvs_flash_init();                           
   nimble_port_init();                        
