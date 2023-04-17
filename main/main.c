@@ -52,7 +52,7 @@ typedef struct _s_output{
 } s_output;
 
 typedef struct _s_block{
-  uint8_t numel;
+  uint16_t numel;
   s_output *elements;
 } s_block;
 
@@ -61,9 +61,9 @@ void _setup_s_block(s_block *s_blk) {
 }
 
 // Sensor Blocks
-extren s_block s_one_block = {0, NULL};
-extren s_block s_two_block = {0, NULL};
-extren s_block s_thr_block = {0, NULL};
+s_block s_one_block = {0, NULL};
+s_block s_two_block = {0, NULL};
+s_block s_thr_block = {0, NULL};
 
 //******************************
 // BLE Setup
@@ -92,7 +92,9 @@ static int device_read_sensor1(uint16_t con_handle, uint16_t attr_handle, struct
     
     // Add the first element from the FIFO to the
     // BLE buffer, decerement the number of elements
-    int rc = os_mbuf_append(ctxt->om, &(s_one_block.elements[--s_one_block.numel]), sizeof(s_output));
+    int rc = os_mbuf_append(ctxt->om, &(s_one_block.elements[--s_one_block.numel]), sizeof(s_output)*2);
+    
+    s_one_block.numel--;
 
     // Check if the buffer has been appended correctly
     assert(rc == 0);
@@ -323,14 +325,8 @@ static inst setup[] = {
   // Sensor Setup
   {LSM6DSM_CTRL3_C, 0x45}, // Block Update=TRUE
 
-  // GYRO Setup
-  {LSM6DSM_CTRL2_G, 0x20}, // ODR=26 Hz, FS_G=250 dps
-
-  // Accel Setup
-  {LSM6DSM_CTRL1_XL, 0x2E}, // ODR=26 Hz, FS=+-8g, LPF1_BW_SEL=1
-
   // FIFO Setup
-  {LSM6DSM_FIFO_CTRL2, 0x04}, // WATERMARK=50%
+  {LSM6DSM_FIFO_CTRL2, 0x02}, // WATERMARK=25%
   {LSM6DSM_FIFO_CTRL3, 0x09}, // GYRO DEC=NONE, XL DEC=NONE
   {LSM6DSM_FIFO_CTRL5, 0x16}, // ODR=26 Hz, FIFO_MODE=CONTINOUS MODE
   
@@ -361,6 +357,9 @@ void _fifo_read(spi_device_handle_t spi, s_block *blk) {
   
   // Get the number of values in the fifo, and calculate the number of elements
   uint16_t num = (spi_read_trans(spi, LSM6DSM_FIFO_STATUS1, HALFWORD) & 0x7FFF) / 6;
+
+  // Make the number of elements even
+  num &= ~0x1;
 
   for(int i = num - 1; i >= 0; i--) {
     (blk->elements)[i].ang_x = spi_read_trans(spi, LSM6DSM_FIFO_DATA_OUT_L, HALFWORD);
@@ -415,6 +414,36 @@ static void gpio_task_example(void* arg) {
             _fifo_read(s_two, &s_two_block);
             printf("numel=%u\n", s_two_block.numel);
             break;
+          case 12:
+            {
+              inst halfword = {LSM6DSM_CTRL2_G, 0x20};
+              spi_write_trans(s_one, &halfword, HALFWORD); // ODR=26 Hz, FS_G=250 dps
+            }
+
+            {
+              inst halfword = {LSM6DSM_CTRL1_XL, 0x2E};
+              spi_write_trans(s_one, &halfword, HALFWORD); // ODR=26 Hz, FS=+-8g, LPF1_BW_SEL=1
+            }
+            printf("SENSOR GO!!!\n");
+
+            //vTaskDelay(4000 / portTICK_PERIOD_MS);
+
+            //{
+            //  inst halfword = {LSM6DSM_CTRL2_G, 0x00};
+            //  spi_write_trans(s_one, &halfword, HALFWORD); // ODR=26 Hz, FS_G=250 dps
+            //}
+
+            //{
+            //  inst halfword = {LSM6DSM_CTRL1_XL, 0x0E};
+            //  spi_write_trans(s_one, &halfword, HALFWORD); // ODR=26 Hz, FS=+-8g, LPF1_BW_SEL=1
+            //}
+
+            printf("SENSOR STOP!!!\n");
+            
+            //_fifo_read(s_one, &s_one_block);
+            
+            break;
+
         }
     }
   }
@@ -441,7 +470,7 @@ void app_main(void)
 
   {
     spi_device_interface_config_t devcfg = {
-      .clock_speed_hz=1*1000*1000,        // Clock out at 5 MHz
+      .clock_speed_hz=5*1000*1000,        // Clock out at 5 MHz
       .mode=0,                            // SPI mode 0
       .spics_io_num=PIN_CS0,              // CS pin
       .queue_size=7,                      // We want to be able to queue 7 transactions at a time
@@ -454,7 +483,7 @@ void app_main(void)
 
   {
     spi_device_interface_config_t devcfg = {
-      .clock_speed_hz=1*1000*1000,        // Clock out at 5 MHz
+      .clock_speed_hz=5*1000*1000,        // Clock out at 5 MHz
       .mode=0,                            // SPI mode 0
       .spics_io_num=PIN_CS1,              // CS pin
       .queue_size=7,                      // We want to be able to queue 7 transactions at a time
@@ -489,6 +518,13 @@ void app_main(void)
   gpio_install_isr_service(ESP_INTR_FLAG_LEVEL3);
   gpio_isr_handler_add(PIN_S_ONE_INT1, gpio_isr_handler, (void*) PIN_S_ONE_INT1);
   gpio_isr_handler_add(PIN_S_TWO_INT1, gpio_isr_handler, (void*) PIN_S_TWO_INT1);
+
+  // BUTTON
+  gpio_set_direction(12, GPIO_MODE_INPUT);
+  gpio_pulldown_en(12);
+  gpio_pullup_dis(12);
+  gpio_set_intr_type(12, GPIO_INTR_POSEDGE);
+  gpio_isr_handler_add(12, gpio_isr_handler, (void*) 12);
 
   //for(;;) {
   //  vTaskDelay(1000 / portTICK_PERIOD_MS);

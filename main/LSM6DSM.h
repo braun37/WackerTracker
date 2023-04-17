@@ -23,9 +23,22 @@
 #define LSM6DSM_INT1_CTRL                 0x0D
 #define LSM6DSM_INT2_CTRL                 0x0E
 #define LSM6DSM_WHO_AM_I                  0x0F  // should be 0x6A
-#define LSM6DSM_CTRL1_XL                  0x10
-#define LSM6DSM_CTRL2_G                   0x11
-#define LSM6DSM_CTRL3_C                   0x12
+
+#define LSM6DSM_CTRL1_XL 0x10
+#define LSM6DSM_CTRL1_ODR_MASK    4
+#define LSM6DSM_CTRL1_FS_MASK     2
+#define LSM6DSM_CTRL1_LPF_MASK    1
+#define LSM6DSM_CTRL1_BW_MASK     0
+
+#define LSM6DSM_CTRL2_G 0x11
+#define LSM6DSM_CTRL2_ODR_MASK    4
+#define LSM6DSM_CTRL2_FS_G_MASK   2
+#define LSM6DSM_CTRL2_FS_125_MASK 1
+
+#define LSM6DSM_CTRL3_C 0x12
+#define LSM6DSM_BOOT_MASK         7
+#define LSM6DSM_BDU_MASK          6
+
 #define LSM6DSM_CTRL4_C                   0x13
 #define LSM6DSM_CTRL5_C                   0x14
 #define LSM6DSM_CTRL6_C                   0x15
