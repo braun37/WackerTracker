@@ -1,2 +1,4 @@
-idf_component_register(SRCS "spi_main.c"
-                    INCLUDE_DIRS ".")
+idf_component_register(
+  SRCS "main.c" "spi.c"
+  INCLUDE_DIRS "."
+)

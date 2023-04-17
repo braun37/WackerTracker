@@ -1,0 +1,27 @@
+CMake Error at /home/nick/esp/esp-idf/tools/cmake/third_party/GetGitRevisionDescription.cmake:75 (configure_file):
+  Operation not permitted
+Call Stack (most recent call first):
+  /home/nick/esp/esp-idf/tools/cmake/third_party/GetGitRevisionDescription.cmake:90 (get_git_head_revision)
+  /home/nick/esp/esp-idf/tools/cmake/build.cmake:70 (git_describe)
+  /home/nick/esp/esp-idf/tools/cmake/build.cmake:239 (__build_get_idf_git_revision)
+  /home/nick/esp/esp-idf/tools/cmake/idf.cmake:53 (__build_init)
+  /home/nick/esp/esp-idf/tools/cmake/project.cmake:12 (include)
+  CMakeLists.txt:7 (include)
+
+
+usage: __main__.py [-h] [--config [CONFIG]] [--defaults [DEFAULTS]] --kconfig
+                   KCONFIG [--sdkconfig-rename SDKCONFIG_RENAME]
+                   [--dont-write-deprecated] [--output FORMAT FILENAME]
+                   [--env NAME=VAL] [--env-file ENV_FILE]
+                   [--list-separator {space,semicolon}]
+__main__.py: error: argument --kconfig: expected one argument
+CMake Error at /home/nick/esp/esp-idf/tools/cmake/kconfig.cmake:176 (message):
+  Failed to run kconfgen
+  (/home/nick/.espressif/python_env/idf5.1_py3.8_env/bin/python;-m;kconfgen;--list-separator=semicolon;--kconfig;--sdkconfig-rename;--config;/home/nick/WackerTracker/sdkconfig;--env-file;/home/nick/WackerTracker/build/config.env).
+  Error 2
+Call Stack (most recent call first):
+  /home/nick/esp/esp-idf/tools/cmake/build.cmake:613 (__kconfig_generate_config)
+  /home/nick/esp/esp-idf/tools/cmake/project.cmake:453 (idf_build_process)
+  CMakeLists.txt:8 (project)
+
+

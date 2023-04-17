@@ -1,2 +1,12 @@
-CMake Error: The current CMakeCache.txt directory /project/build/CMakeCache.txt is different than the directory /home/nick/WackerTracker/build where CMakeCache.txt was created. This may result in binaries being created in the wrong place. If you are not sure, reedit the CMakeCache.txt
-CMake Error: The source "/project/CMakeLists.txt" does not match the source "/home/nick/WackerTracker/CMakeLists.txt" used to generate cache.  Re-run cmake with a different source directory.
+Compiler supported targets: xtensa-esp32-elf
+
+CMake Error at /opt/esp/idf/components/mbedtls/mbedtls/CMakeLists.txt:138 (message):
+  Could not create symbolic link for:
+  /opt/esp/idf/components/mbedtls/mbedtls/library/error.c --> ln: failed to
+  create symbolic link
+  '/project/build/esp-idf/mbedtls/mbedtls/library/error.c': File exists
+
+Call Stack (most recent call first):
+  /opt/esp/idf/components/mbedtls/mbedtls/library/CMakeLists.txt:184 (link_to_source)
+
+

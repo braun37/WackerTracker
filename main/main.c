@@ -21,12 +21,14 @@
 #include "sdkconfig.h"
 
 #include "LSM6DSM.h"
+#include "spi.h"
 
 #define BYTE 8
 #define HALFWORD 16
 #define WORD 32
 
 #define HOST    HSPI_HOST
+#define DEBUG
 
 #define PIN_MISO 25
 #define PIN_MOSI 23
@@ -59,9 +61,9 @@ void _setup_s_block(s_block *s_blk) {
 }
 
 // Sensor Blocks
-s_block s_one_block = {0, NULL};
-s_block s_two_block = {0, NULL};
-s_block s_thr_block = {0, NULL};
+extren s_block s_one_block = {0, NULL};
+extren s_block s_two_block = {0, NULL};
+extren s_block s_thr_block = {0, NULL};
 
 //******************************
 // BLE Setup
@@ -87,11 +89,13 @@ static int device_read_sensor1(uint16_t con_handle, uint16_t attr_handle, struct
     //for(int i=0; i<s_one_block.numel; i++) {
     //  os_mbuf_append(ctxt->om, &(s_one_block.elements[i]), sizeof(s_one_block.elements[i]));
     //}
-    int rc = os_mbuf_append(ctxt->om, s_one_block.elements, sizeof(*s_one_block.elements)*s_one_block.numel);
-    assert(rc == 0);
+    
+    // Add the first element from the FIFO to the
+    // BLE buffer, decerement the number of elements
+    int rc = os_mbuf_append(ctxt->om, &(s_one_block.elements[--s_one_block.numel]), sizeof(s_output));
 
-    // Clear the number of elements
-    //s_one_block.numel--;
+    // Check if the buffer has been appended correctly
+    assert(rc == 0);
 
     return 0;
 }
@@ -293,17 +297,17 @@ void run_server(void){
     nimble_port_freertos_init(host_task); 
 }
 
-//void app_main()
-//{
-//    nvs_flash_init();                           
-//    nimble_port_init();                        
-//    
-//    //BLE Client
-//    //run_client();
-//    
-//    //BLE Server
-//    run_server();
-//}
+void start_server()
+{
+    nvs_flash_init();                           
+    nimble_port_init();                        
+    
+    //BLE Client
+    //run_client();
+    
+    //BLE Server
+    run_server();
+}
 
 //******************************
 // Sensor Setup
@@ -340,68 +344,6 @@ int _num_setup_inst() {
 }
 
 //******************************
-// SPI Helper Functions
-//******************************
-
-void _spi_send_cmd(spi_device_handle_t spi, const uint8_t cmd)
-{
-  spi_transaction_t t;
-  esp_err_t ret;
-
-  memset(&t, 0, sizeof(t));
-  t.length = 8;
-  t.tx_buffer = &cmd;
-  t.flags = SPI_TRANS_CS_KEEP_ACTIVE;
-
-  ret = spi_device_polling_transmit(spi, &t);
-  ESP_ERROR_CHECK(ret);
-}
-
-uint16_t _spi_read_trans(spi_device_handle_t spi, const uint8_t addr, const int len)
-{
-  // Acquire the bus for the device
-  spi_device_acquire_bus(spi, portMAX_DELAY);
-
-  // Send read command to the correct address
-  _spi_send_cmd(spi, (uint8_t)(0x80 | addr));
-
-  spi_transaction_t t;
-  esp_err_t ret;
-
-  memset(&t, 0, sizeof(t));
-  t.length = len;
-  t.flags = SPI_TRANS_USE_RXDATA;
-
-  ret=spi_device_polling_transmit(spi, &t);
-  ESP_ERROR_CHECK(ret);
-
-  // Release the bus
-  spi_device_release_bus(spi);
-
-  return *(uint16_t*)t.rx_data;
-}
-
-void _spi_write_trans(spi_device_handle_t spi, void *data, const int len)
-{
-  // Acquire the bus for the device
-  spi_device_acquire_bus(spi, portMAX_DELAY);
-
-  spi_transaction_t t;
-  esp_err_t ret;
-
-  memset(&t, 0, sizeof(t));
-  t.length = len;
-  t.tx_buffer = data;
-  t.flags = SPI_TRANS_USE_RXDATA;
-
-  ret=spi_device_polling_transmit(spi, &t);
-  ESP_ERROR_CHECK(ret);
-
-  // Release the bus
-  spi_device_release_bus(spi);
-}
-
-//******************************
 // Sensor Helper Functions
 //******************************
 
@@ -409,22 +351,40 @@ void _setup_sensor(spi_device_handle_t spi) {
   int numInst = _num_setup_inst();
 
   for(int i=0; i<numInst; i++) {
-    _spi_write_trans(spi, &setup[i], HALFWORD);
+    spi_write_trans(spi, &setup[i], HALFWORD);
   }
 }
 
 void _fifo_read(spi_device_handle_t spi, s_block *blk) {
+  // ERROR! Data being overwritten!
   //assert(!blk->numel);
-  blk->numel = (_spi_read_trans(spi, LSM6DSM_FIFO_STATUS1, HALFWORD) & 0x7FFF)/6;
+  
+  // Get the number of values in the fifo, and calculate the number of elements
+  uint16_t num = (spi_read_trans(spi, LSM6DSM_FIFO_STATUS1, HALFWORD) & 0x7FFF) / 6;
 
-  for(int i=0; i<blk->numel; i++) {
-    (blk->elements)[i].ang_x = _spi_read_trans(spi, LSM6DSM_FIFO_DATA_OUT_L, HALFWORD);
-    (blk->elements)[i].ang_y = _spi_read_trans(spi, LSM6DSM_FIFO_DATA_OUT_L, HALFWORD);
-    (blk->elements)[i].ang_z = _spi_read_trans(spi, LSM6DSM_FIFO_DATA_OUT_L, HALFWORD);
-    (blk->elements)[i].lin_x = _spi_read_trans(spi, LSM6DSM_FIFO_DATA_OUT_L, HALFWORD);
-    (blk->elements)[i].lin_y = _spi_read_trans(spi, LSM6DSM_FIFO_DATA_OUT_L, HALFWORD);
-    (blk->elements)[i].lin_z = _spi_read_trans(spi, LSM6DSM_FIFO_DATA_OUT_L, HALFWORD);
+  for(int i = num - 1; i >= 0; i--) {
+    (blk->elements)[i].ang_x = spi_read_trans(spi, LSM6DSM_FIFO_DATA_OUT_L, HALFWORD);
+    (blk->elements)[i].ang_y = spi_read_trans(spi, LSM6DSM_FIFO_DATA_OUT_L, HALFWORD);
+    (blk->elements)[i].ang_z = spi_read_trans(spi, LSM6DSM_FIFO_DATA_OUT_L, HALFWORD);
+    (blk->elements)[i].lin_x = spi_read_trans(spi, LSM6DSM_FIFO_DATA_OUT_L, HALFWORD);
+    (blk->elements)[i].lin_y = spi_read_trans(spi, LSM6DSM_FIFO_DATA_OUT_L, HALFWORD);
+    (blk->elements)[i].lin_z = spi_read_trans(spi, LSM6DSM_FIFO_DATA_OUT_L, HALFWORD);
+
+    #ifdef DEBUG
+      printf("[%3u] (%6hd, %6hd, %6hd) [%6hd, %6hd, %6hd]\n", 
+        i,
+        (blk->elements)[i].ang_x,
+        (blk->elements)[i].ang_y,
+        (blk->elements)[i].ang_z,
+        (blk->elements)[i].lin_x,
+        (blk->elements)[i].lin_y,
+        (blk->elements)[i].lin_z);
+    #endif
   }
+
+  // Set the number of elements in the structure
+  // trigger a read from the BLE
+  blk->numel = num;
 }
 
 static QueueHandle_t gpio_evt_queue = NULL;
@@ -573,13 +533,6 @@ void app_main(void)
   //  }
   //}
 
-  nvs_flash_init();                           
-  nimble_port_init();                        
-  
-  //BLE Client
-  //run_client();
-  
-  //BLE Server
-  run_server();
+  start_server();
 }
 
